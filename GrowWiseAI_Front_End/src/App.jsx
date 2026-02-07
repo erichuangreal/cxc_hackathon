@@ -1,35 +1,32 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// src/App.jsx
+import { useState } from "react";
+import SidePanel from "./components/panel/SidePanel";
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [radiusKm, setRadiusKm] = useState(10);
+
+  // TEMP mock result so UI shows something
+  const demoResult = {
+    status: "healthy",
+    survivability: 0.82,
+    confidence: 0.74,
+    label: "Likely healthy",
+    key_factors: ["Low drought risk", "Moderate soil moisture"],
+    explanation:
+      "Conditions in the selected area suggest strong short-term tree health.",
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", height: "100vh" }}>
+      {/* Map will go here later */}
+      <div style={{ background: "#020503" }} />
 
-export default App
+      <SidePanel
+        radiusKm={radiusKm}
+        setRadiusKm={setRadiusKm}
+        result={demoResult}
+        isLoading={false}
+      />
+    </div>
+  );
+}
