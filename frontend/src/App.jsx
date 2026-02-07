@@ -7,7 +7,13 @@ const API_BASE = "/api";
 
 export default function App() {
   const [selectedPoint, setSelectedPoint] = useState(null);
+
+  // current editable values (sliders)
   const [features, setFeatures] = useState({});
+
+  // last fetched/base values for the selected point (what "Reset all" returns to)
+  const [baseFeatures, setBaseFeatures] = useState(null);
+
   const [source, setSource] = useState({});
   const [fetchLoading, setFetchLoading] = useState(false);
   const [predictLoading, setPredictLoading] = useState(false);
@@ -19,15 +25,17 @@ export default function App() {
     setError(null);
     setFetchLoading(true);
     setResult(null);
+
     try {
       const res = await fetch(
         `${API_BASE}/fetch-features?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`
       );
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
+
       const { source: src, ...feat } = data;
-      setSource(src || {});
-      setFeatures({
+
+      const nextBase = {
         elevation: feat.elevation,
         temperature: feat.temperature,
         humidity: feat.humidity,
@@ -35,10 +43,15 @@ export default function App() {
         soil_tp: feat.soil_tp,
         soil_ap: feat.soil_ap,
         soil_an: feat.soil_an,
-      });
+      };
+
+      setSource(src || {});
+      setBaseFeatures(nextBase);
+      setFeatures(nextBase); // start sliders at base values
     } catch (err) {
-      setError(err.message || "Failed to fetch features");
+      setError(err?.message || "Failed to fetch features");
       setFeatures({});
+      setBaseFeatures(null);
       setSource({});
     } finally {
       setFetchLoading(false);
@@ -48,6 +61,7 @@ export default function App() {
   const handleRunPredict = useCallback(async (currentFeatures) => {
     setError(null);
     setPredictLoading(true);
+
     try {
       const res = await fetch(`${API_BASE}/predict`, {
         method: "POST",
@@ -58,16 +72,21 @@ export default function App() {
       const data = await res.json();
       setResult(data);
     } catch (err) {
-      setError(err.message || "Prediction failed");
+      setError(err?.message || "Prediction failed");
       setResult(null);
     } finally {
       setPredictLoading(false);
     }
   }, []);
 
+  const handleResetAll = useCallback(() => {
+    if (baseFeatures) setFeatures(baseFeatures);
+  }, [baseFeatures]);
+
   const handleClear = useCallback(() => {
     setSelectedPoint(null);
     setFeatures({});
+    setBaseFeatures(null);
     setSource({});
     setResult(null);
     setError(null);
@@ -93,23 +112,32 @@ export default function App() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(200px, 1fr) 360px", height: "100vh", overflow: "hidden" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(200px, 1fr) 360px",
+          height: "100vh",
+          overflow: "hidden",
+        }}
+      >
         <div style={{ minHeight: 0, height: "100%", position: "relative" }}>
           <MapView selectedPoint={selectedPoint} onSelectPoint={handleMapClick} />
         </div>
 
         <SidePanel
-        selectedPoint={selectedPoint}
-        features={features}
-        source={source}
-        fetchLoading={fetchLoading}
-        predictLoading={predictLoading}
-        result={result}
-        error={error}
-        onClear={handleClear}
-        onFeaturesChange={setFeatures}
-        onRunPredict={handleRunPredict}
-      />
+          selectedPoint={selectedPoint}
+          features={features}
+          baseFeatures={baseFeatures}
+          source={source}
+          fetchLoading={fetchLoading}
+          predictLoading={predictLoading}
+          result={result}
+          error={error}
+          onClear={handleClear}
+          onFeaturesChange={setFeatures}
+          onRunPredict={handleRunPredict}
+          onResetAll={handleResetAll}
+        />
       </div>
     </>
   );
