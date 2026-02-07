@@ -13,36 +13,42 @@ warnings.filterwarnings('ignore')
 print(f"XGBoost version: {xgb.__version__}")
 
 # Load the data
-print("Loading data...")
-url = "https://raw.githubusercontent.com/erichuangreal/cxc_hackathon/refs/heads/main/backend/forest_health_data_with_target.csv"
 df = pd.read_csv('backend/forest_health_data_with_target.csv')
 
-print(f"Dataset shape: {df.shape}")
-print(f"Columns: {list(df.columns)}")
-print(f"Target column found: 'Health_Status'")
+#print(f"Dataset shape: {df.shape}")
+#print(f"Columns: {list(df.columns)}")
+#print(f"Target column found: 'Health_Status'")
 
 # Prepare features and target
 # Remove ONLY identifier columns (Plot_ID, Latitude, Longitude)
-identifier_cols = ['Plot_ID', 'Latitude', 'Longitude', 'DBH', 'Tree_Height', 'Crown_Width_North_South', 'Crown_Width_East_West']
+identifier_cols = ['Plot_ID', 'Latitude', 'Longitude', 'DBH', 'Tree_Height', 'Crown_Width_North_South', 'Crown_Width_East_West', 'Menhinick_Index', 'Gleason_Index', 'Disturbance_Level']
 X = df.drop(['Health_Status'] + identifier_cols, axis=1)
 y = df['Health_Status']
 
-print(f"Features after removing identifiers: {X.shape}")
-print(f"Features used: {list(X.columns)}")
+#print(f"Features after removing identifiers: {X.shape}")
+#print(f"Features used: {list(X.columns)}")
 
-# Convert target to numerical values
 le = LabelEncoder()
-y_encoded = le.fit_transform(y)
-print(f"Label mapping:")
-for i, class_name in enumerate(le.classes_):
-    print(f"  {class_name} -> {i}")
+le.fit(y)
 
-# Check class distribution
-print(f"Class distribution:")
-for class_name in le.classes_:
-    count = (y == class_name).sum()
-    percentage = (count / len(y)) * 100
-    print(f"  {class_name}: {count} samples ({percentage:.1f}%)")
+health_mapping = {
+    'Unhealthy': 0,       # Worst health status
+    'Sub-healthy': 1,     # Poor but recovering
+    'Healthy': 2,         # Normal health
+    'Very Healthy': 3     # Optimal health
+}
+
+# Apply the ordinal mapping instead of alphabetical encoding
+y_encoded = y.map(health_mapping)
+
+# Verify all values were mapped
+missing_classes = set(y.unique()) - set(health_mapping.keys())
+if missing_classes:
+    raise ValueError(f"Missing mapping for classes: {missing_classes}")
+
+print(f"Label mapping (ORDINAL HEALTH PROGRESSION):")
+for class_name, code in sorted(health_mapping.items(), key=lambda x: x[1]):
+    print(f"  {class_name} -> {code}")
 
 # Split into train, validation, and test sets (70-15-15)
 X_train, X_temp, y_train, y_temp = train_test_split(
