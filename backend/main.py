@@ -147,7 +147,8 @@ Do not start the paragraph with "Here is a description of the location..." or an
 Do not include latitude, longitude, or coordinates in your description.
 Write 2-4 sentences describing the environment and list 5 common trees likely in this region as well as 3 common factors affecting this region.
 Common trees: tree1, tree2, tree3, tree4, tree5
-Common factors that may affect the trees in the future: factor1, factor2, factor3
+Add paragraph break here.
+Common factors that may affect the trees in the future: factor1, factor2, factor3 (don't use ands in each factor)
 """
     resp = model.generate_content(prompt)
     description = getattr(resp, "text", None) or str(resp)
