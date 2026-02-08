@@ -114,7 +114,7 @@
   width: 280px;
   height: 280px;
   left: 6%;
-  top: 18%;
+  top: 14%;
   border-radius: 999px;
   border: 1px solid rgba(46, 234, 119, 0.18);
   background:
@@ -129,7 +129,7 @@
   width: 520px;
   height: 360px;
   right: -140px;
-  top: 18%;
+  top: 16%;
   border-radius: 48% 52% 60% 40% / 55% 45% 55% 45%;
   background:
     radial-gradient(closest-side at 35% 35%, rgba(46, 234, 119, 0.22), transparent 70%),
@@ -221,7 +221,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 24px;
+  padding: 12px 24px;
 }
 
 .gw-brand {
@@ -247,34 +247,32 @@
   z-index: 3;
   max-width: 1180px;
   margin: 0 auto;
-  padding: 26px 24px 10px;
+  padding: 14px 24px 10px;
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 26px;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 28px;
   align-items: center;
 }
 
-.gw-hero-inner { padding: 12px 0; }
+.gw-hero-inner { padding: 6px 0; }
 
-.gw-logo-wrap {
-  width: 92px;
-  height: 92px;
-  border-radius: 22px;
-  border: 1px solid rgba(46, 234, 119, 0.18);
-  background: rgba(6, 12, 8, 0.52);
-  display: grid;
-  place-items: center;
-  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.45);
+/* Title row (logo left of name) */
+.gw-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 4px 0 10px;
 }
 
-.gw-hero-logo {
-  width: 64px;
-  height: 64px;
+.gw-title-logo {
+  width: 56px;
+  height: 56px;
   object-fit: contain;
+  filter: drop-shadow(0 14px 28px rgba(46, 234, 119, 0.16));
 }
 
 .gw-title {
-  margin: 16px 0 10px;
+  margin: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   font-size: 56px;
   line-height: 1.02;
@@ -291,122 +289,6 @@
   font-weight: 800;
 }
 
-/* ---------------------------
-   Why it matters strip
-----------------------------*/
-.gw-why {
-  margin-top: 14px;
-  max-width: 600px;
-  border-radius: 16px;
-  padding: 12px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(6, 12, 8, 0.52);
-  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.30);
-}
-
-.gw-why-head {
-  font-weight: 950;
-  letter-spacing: 0.1px;
-  margin-bottom: 6px;
-  color: rgba(233, 249, 239, 0.92);
-}
-
-.gw-why-body {
-  color: rgba(233, 249, 239, 0.72);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-/* ---------------------------
-   Value cards
-----------------------------*/
-.gw-values {
-  position: relative;
-  z-index: 3;
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 8px 24px 8px;
-}
-
-.gw-values-inner {
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(6, 12, 8, 0.45);
-  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.32);
-  padding: 16px 16px;
-}
-
-.gw-values-title {
-  font-weight: 950;
-  letter-spacing: -0.2px;
-  margin: 0 0 12px;
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.90);
-}
-
-.gw-values-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.gw-value-card {
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(2, 5, 3, 0.35);
-  padding: 14px 14px;
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-}
-
-.gw-value-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(46, 234, 119, 0.22);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
-}
-
-.gw-value-top {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.gw-value-ic {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  border: 1px solid rgba(46, 234, 119, 0.18);
-  background: rgba(6, 12, 8, 0.52);
-  display: grid;
-  place-items: center;
-  color: rgba(46, 234, 119, 0.95);
-  box-shadow: 0 18px 40px rgba(0,0,0,0.25);
-}
-
-.gw-vi {
-  width: 20px;
-  height: 20px;
-}
-
-.gw-value-head {
-  font-weight: 950;
-  color: rgba(233, 249, 239, 0.90);
-  letter-spacing: 0.1px;
-}
-
-.gw-value-text {
-  color: rgba(233, 249, 239, 0.70);
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-/* Responsive */
-@media (max-width: 980px) {
-  .gw-values-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 .gw-subtitle {
   margin: 0;
   color: rgba(233, 249, 239, 0.74);
@@ -416,7 +298,7 @@
 }
 
 .gw-live {
-  margin-top: 12px;
+  margin-top: 10px;
   display: flex;
   gap: 10px;
   align-items: center;
@@ -466,7 +348,7 @@
 }
 
 .gw-cta {
-  margin-top: 16px;
+  margin-top: 14px;
   display: flex;
   gap: 12px;
   align-items: center;
@@ -501,7 +383,7 @@
 
 /* Mini steps */
 .gw-mini {
-  margin-top: 18px;
+  margin-top: 14px;
   display: grid;
   gap: 10px;
   max-width: 520px;
@@ -530,7 +412,19 @@
   line-height: 1.35;
 }
 
+/* Make the mini steps more compact */
+.gw-mini-compact .gw-mini-item {
+  padding: 10px 12px;
+}
+.gw-mini-compact .gw-mini-text {
+  font-size: 12.5px;
+}
+
 /* Preview card */
+.gw-preview {
+  width: 100%;
+}
+
 .gw-preview-card {
   border-radius: 18px;
   background: rgba(6, 12, 8, 0.52);
@@ -561,14 +455,15 @@
 }
 
 .gw-preview-body {
-  padding: 14px;
+  padding: 16px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 14px;
 }
 
+/* Slightly bigger window area */
 .gw-preview-map {
-  height: 240px;
+  height: 270px;
   border-radius: 14px;
   border: 1px solid rgba(46, 234, 119, 0.20);
   background:
@@ -593,7 +488,7 @@
 }
 
 .gw-preview-panel {
-  height: 240px;
+  height: 270px;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.10);
   background: rgba(2, 5, 3, 0.40);
@@ -729,18 +624,13 @@
 
 .gw-footer-muted { color: rgba(233, 249, 239, 0.52); }
 
-@media (max-landing: 980px) {
+/* NOTE: your original had (max-landing: 980px) which is invalid.
+   Keeping your working responsive rule below. */
+@media (max-width: 980px) {
   .gw-hero { grid-template-columns: 1fr; }
   .gw-title { font-size: 44px; }
   .gw-how-grid { grid-template-columns: 1fr; }
-}
-
-/* Make the mini steps more compact (so hero feels cleaner) */
-.gw-mini-compact .gw-mini-item {
-  padding: 10px 12px;
-}
-.gw-mini-compact .gw-mini-text {
-  font-size: 12.5px;
+  .gw-title-row { justify-content: flex-start; }
 }
 
 /* Details section container */

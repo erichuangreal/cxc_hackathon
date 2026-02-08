@@ -96,25 +96,23 @@ export default function LandingPage({ onEnter }) {
         </div>
       </header>
 
-      {/* HERO: keep it light / minimal */}
       <main className="gw-hero">
         <div className="gw-hero-inner">
-          <div className="gw-logo-wrap" aria-hidden="true">
-            <img className="gw-hero-logo" src={logo} alt="" />
+          {/* Title row: logo LEFT of name */}
+          <div className="gw-title-row">
+            <img className="gw-title-logo" src={logo} alt="GrowWiseAI logo" />
+            <h1 className="gw-title">
+              GrowWiseAI<span className="gw-title-accent">.</span>
+            </h1>
           </div>
-
-          <h1 className="gw-title">
-            GrowWiseAI<span className="gw-title-accent">.</span>
-          </h1>
 
           <p className="gw-slogan">
             “not every soil can bear all things. Be practical”
           </p>
 
-          {/* Less wordy subtitle */}
           <p className="gw-subtitle">
-            Click a point in one of the 48 states. We pull daily-refreshed soil + climate
-            baselines and predict tree survivability.
+            Click anywhere in the contiguous U.S. We fetch daily-updated soil and climate baselines, 
+            then predict tree survivability.
           </p>
 
           <div className="gw-live" role="note" aria-label="Live data note">
@@ -122,22 +120,28 @@ export default function LandingPage({ onEnter }) {
               <span className="gw-live-dot" aria-hidden="true" /> Live data
             </span>
             <span className="gw-live-text">
-              Baseline environmental inputs refresh every 24h for every location
-              you pick.
+              Refreshes every 24 hours
             </span>
           </div>
 
           <div className="gw-cta">
-            <button className="gw-btn gw-btn-primary" onClick={onEnter} type="button">
+            <button
+              className="gw-btn gw-btn-primary"
+              onClick={onEnter}
+              type="button"
+            >
               Launch Demo
             </button>
 
-            <button className="gw-btn gw-btn-ghost" type="button" onClick={scrollToDetails}>
+            <button
+              className="gw-btn gw-btn-ghost"
+              type="button"
+              onClick={scrollToDetails}
+            >
               See details
             </button>
           </div>
 
-          {/* Keep mini steps but compact */}
           <div className="gw-mini gw-mini-compact">
             <div className="gw-mini-item">
               <div className="gw-mini-num">01</div>
@@ -184,7 +188,6 @@ export default function LandingPage({ onEnter }) {
         </div>
       </main>
 
-      {/* DETAILS: cleaner + expandable */}
       <section className="gw-details" id="details">
         <div className="gw-details-inner">
           <h2 className="gw-details-title">Details</h2>
@@ -291,7 +294,11 @@ export default function LandingPage({ onEnter }) {
               </div>
 
               <div className="gw-details-cta">
-                <button className="gw-btn gw-btn-primary" onClick={onEnter} type="button">
+                <button
+                  className="gw-btn gw-btn-primary"
+                  onClick={onEnter}
+                  type="button"
+                >
                   Launch Demo
                 </button>
               </div>
