@@ -2,6 +2,9 @@ import { useMemo } from "react";
 import "./landing.css";
 import logo from "./assets/logo.png";
 
+const YT_EMBED_URL =
+  "https://www.youtube.com/embed/cNUui4X1Q-0?rel=0&modestbranding=1&playsinline=1";
+
 function ValueIcon({ type }) {
   if (type === "live") {
     return (
@@ -107,21 +110,19 @@ export default function LandingPage({ onEnter }) {
           </div>
 
           <p className="gw-slogan">
-            “not every soil can bear all things. Be practical”
+            “Not every soil can bear all things. Be practical”
           </p>
 
           <p className="gw-subtitle">
-            Click anywhere in the contiguous U.S. We fetch daily-updated soil and climate baselines, 
-            then predict tree survivability.
+            Click anywhere in the contiguous U.S. We fetch daily-updated soil and
+            climate baselines, then predict tree survivability.
           </p>
 
           <div className="gw-live" role="note" aria-label="Live data note">
             <span className="gw-pill gw-pill-live">
               <span className="gw-live-dot" aria-hidden="true" /> Live data
             </span>
-            <span className="gw-live-text">
-              Refreshes every 24 hours
-            </span>
+            <span className="gw-live-text">Refreshes every 24 hours</span>
           </div>
 
           <div className="gw-cta">
@@ -168,7 +169,20 @@ export default function LandingPage({ onEnter }) {
             </div>
 
             <div className="gw-preview-body">
+              {/* ✅ VIDEO goes here */}
               <div className="gw-preview-map">
+                <div className="gw-video" aria-label="GrowWiseAI demo video">
+                  <iframe
+                    src={YT_EMBED_URL}
+                    title="GrowWiseAI demo"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                  />
+                </div>
+
+                {/* Keep your label overlay */}
                 <div className="gw-preview-map-label">Contiguous USA</div>
               </div>
 
@@ -206,7 +220,9 @@ export default function LandingPage({ onEnter }) {
           </details>
 
           <details className="gw-acc" open={false}>
-            <summary className="gw-acc-sum">What makes GrowWiseAI different</summary>
+            <summary className="gw-acc-sum">
+              What makes GrowWiseAI different
+            </summary>
             <div className="gw-acc-body">
               <div className="gw-values-grid">
                 <div className="gw-value-card">
@@ -257,10 +273,13 @@ export default function LandingPage({ onEnter }) {
               <div className="gw-how-grid">
                 <div className="gw-how-card">
                   <div className="gw-how-num">01</div>
-                  <div className="gw-how-head">Click a location (lower-48 only)</div>
+                  <div className="gw-how-head">
+                    Click a location (lower-48 only)
+                  </div>
                   <div className="gw-how-text">
                     The map only accepts clicks inside the contiguous U.S.
-                    Outside the boundary you’ll see a red ❌ and clicks are ignored.
+                    Outside the boundary you’ll see a red ❌ and clicks are
+                    ignored.
                   </div>
                 </div>
 
