@@ -3,6 +3,10 @@
 venv
 env
 
+#Google Stuff
+.env
+backend/.env
+
 # OS
 .DS_Store
 **/.DS_Store

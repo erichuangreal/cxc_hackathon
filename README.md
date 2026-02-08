@@ -5,11 +5,12 @@
 From project root:
 ```bash
 python3 -m venv venv
-source venv/bin/activate   # or: . venv/bin/activate
+source venv/bin/activate   
+pip install requests python-dotenv google-generativeai
 pip install -r requirements.txt
-uvicorn backend.main:app --reload
+uvicorn backend.main:app --reload --port 8002
 ```
-API runs at `http://localhost:8000`.
+API runs at `http://localhost:8002`.
 
 ## Frontend
 

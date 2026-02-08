@@ -1,5 +1,5 @@
 // src/components/map/MapView.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -10,6 +10,7 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import logo from "../../assets/logo.png";
+import BottomInfoBar from "../BottomInfoBar";
 
 // Fix default marker icons in webpack/vite (otherwise broken icon path)
 const defaultIcon = L.icon({
@@ -190,6 +191,10 @@ export default function MapView({ selectedPoint, onSelectPoint, onBack }) {
   const [showComingSoon, setShowComingSoon] = useState(false);
 
   const [allowedGeoJSON, setAllowedGeoJSON] = useState(null);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [infoLoading, setInfoLoading] = useState(false);
+  const [infoData, setInfoData] = useState(null);
+  const [infoError, setInfoError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -247,6 +252,33 @@ export default function MapView({ selectedPoint, onSelectPoint, onBack }) {
     );
   };
 
+  const fetchLocationCard = useCallback(async (lat, lon) => {
+    setInfoOpen(true);
+    setInfoLoading(true);
+    setInfoError("");
+    setInfoData(null);
+    try {
+      const res = await fetch(
+        `http://localhost:8001/api/location-card?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`
+      );
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setInfoData(data);
+    } catch (err) {
+      setInfoError(err.message || "Failed to load location info.");
+    } finally {
+      setInfoLoading(false);
+    }
+  }, []);
+
+  const handlePointChosen = useCallback(
+    (lat, lon) => {
+      onSelectPoint?.(lat, lon);
+      fetchLocationCard(lat, lon);
+    },
+    [fetchLocationCard, onSelectPoint]
+  );
+
   const handleSearch = async (e) => {
     e?.preventDefault();
     resetErrors();
@@ -262,7 +294,7 @@ export default function MapView({ selectedPoint, onSelectPoint, onBack }) {
         setShowComingSoon(true);
         return;
       }
-      onSelectPoint?.(lat, lon);
+      handlePointChosen(lat, lon);
       return;
     }
 
@@ -293,7 +325,7 @@ export default function MapView({ selectedPoint, onSelectPoint, onBack }) {
         return;
       }
 
-      onSelectPoint?.(lat, lon);
+      handlePointChosen(lat, lon);
     } catch (err) {
       setSearchError(err.message || "Unable to search right now.");
     } finally {
@@ -394,18 +426,26 @@ export default function MapView({ selectedPoint, onSelectPoint, onBack }) {
         />
 
         {/* Exact lower-48 clickable mask + red X cursor outside */}
-        <MapClickAndCursorGuard onSelectPoint={onSelectPoint} allowedGeoJSON={allowedGeoJSON} />
+        <MapClickAndCursorGuard onSelectPoint={handlePointChosen} allowedGeoJSON={allowedGeoJSON} />
 
         <RecenterOnSelect position={selectedPoint ? [selectedPoint.lat, selectedPoint.lon] : null} />
 
-        {selectedPoint && (
-          <Marker position={[selectedPoint.lat, selectedPoint.lon]}>
-            <Popup>
-              {selectedPoint.lat.toFixed(5)}, {selectedPoint.lon.toFixed(5)}
-            </Popup>
-          </Marker>
-        )}
-      </MapContainer>
+      {selectedPoint && (
+        <Marker position={[selectedPoint.lat, selectedPoint.lon]}>
+          <Popup>
+            {selectedPoint.lat.toFixed(5)}, {selectedPoint.lon.toFixed(5)}
+          </Popup>
+        </Marker>
+      )}
+    </MapContainer>
+
+      <BottomInfoBar
+        open={infoOpen}
+        loading={infoLoading}
+        data={infoData}
+        error={infoError}
+        onClose={() => setInfoOpen(false)}
+      />
     </div>
   );
 }
