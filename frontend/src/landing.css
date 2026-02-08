@@ -717,6 +717,7 @@
 
 /* Reuse your existing card grids inside details */
 .gw-details .gw-values-grid {
+  display: grid; 
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-top: 10px;
@@ -740,3 +741,51 @@
   height: 100%;
   border: 0;
 }
+
+/* ===============================
+   Value cards (fix giant icon bug)
+================================ */
+.gw-value-card {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(2, 5, 3, 0.35);
+  padding: 14px 14px;
+}
+
+.gw-value-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.gw-value-ic {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(46, 234, 119, 0.18);
+  background: rgba(6, 12, 8, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.gw-vi {
+  width: 18px;
+  height: 18px;
+  display: block;
+  color: rgba(46, 234, 119, 0.95);
+}
+
+.gw-value-head {
+  font-weight: 950;
+  color: rgba(233, 249, 239, 0.90);
+}
+
+.gw-value-text {
+  color: rgba(233, 249, 239, 0.70);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
