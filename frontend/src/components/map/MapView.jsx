@@ -1,6 +1,13 @@
 // src/components/map/MapView.jsx
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, useMapEvents, Marker, Popup, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  useMapEvents,
+  Marker,
+  Popup,
+  useMap,
+} from "react-leaflet";
 import L from "leaflet";
 
 // Fix default marker icons in webpack/vite (otherwise broken icon path)
@@ -17,12 +24,105 @@ L.Marker.prototype.options.icon = defaultIcon;
 
 const USA_CENTER = [39.5, -98.35];
 const USA_ZOOM = 4;
+
+// These are still used as a fallback if the polygon fails to load,
+// but the real "perfect border" check uses GeoJSON polygons below.
 const USA_BOUNDS = {
   latMin: 24.396308, // Florida Keys
   latMax: 49.384358, // Northern border
   lonMin: -124.848974, // West coast
   lonMax: -66.885444, // East coast
 };
+
+// Contiguous US polygons (we will EXCLUDE Alaska & Hawaii)
+const US_STATES_GEOJSON_URL =
+  "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/us-states.json";
+
+// Keeps map panning mostly around the lower 48
+const LOWER48_BOUNDS = L.latLngBounds(
+  L.latLng(24.396308, -124.848974),
+  L.latLng(49.384358, -66.885444)
+);
+
+/* ---------- geometry helpers: point-in-(multi)polygon ---------- */
+
+function nearly_equal(a, b, eps = 1e-10) {
+  return Math.abs(a - b) <= eps;
+}
+
+function point_on_segment(px, py, ax, ay, bx, by) {
+  // collinear + within bounding box of segment
+  const cross = (px - ax) * (by - ay) - (py - ay) * (bx - ax);
+  if (!nearly_equal(cross, 0)) return false;
+
+  const dot = (px - ax) * (bx - ax) + (py - ay) * (by - ay);
+  if (dot < 0) return false;
+
+  const len_sq = (bx - ax) * (bx - ax) + (by - ay) * (by - ay);
+  if (dot > len_sq) return false;
+
+  return true;
+}
+
+function point_in_ring(lon, lat, ring) {
+  // ring: array of [lon, lat]
+  // returns true if inside OR on boundary
+  let inside = false;
+
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0];
+    const yi = ring[i][1];
+    const xj = ring[j][0];
+    const yj = ring[j][1];
+
+    // boundary counts as inside
+    if (point_on_segment(lon, lat, xj, yj, xi, yi)) return true;
+
+    const intersect =
+      yi > lat !== yj > lat &&
+      lon < ((xj - xi) * (lat - yi)) / (yj - yi + 0.0) + xi;
+
+    if (intersect) inside = !inside;
+  }
+
+  return inside;
+}
+
+function point_in_polygon(lon, lat, polygon_coords) {
+  // polygon_coords: [outerRing, holeRing1, holeRing2, ...]
+  if (!polygon_coords || polygon_coords.length === 0) return false;
+
+  const outer = polygon_coords[0];
+  if (!point_in_ring(lon, lat, outer)) return false;
+
+  // holes (if inside hole => NOT inside polygon)
+  for (let i = 1; i < polygon_coords.length; i++) {
+    if (point_in_ring(lon, lat, polygon_coords[i])) return false;
+  }
+
+  return true;
+}
+
+function point_in_geojson(lon, lat, geojson) {
+  if (!geojson?.features?.length) return false;
+
+  for (const f of geojson.features) {
+    const g = f.geometry;
+    if (!g) continue;
+
+    if (g.type === "Polygon") {
+      if (point_in_polygon(lon, lat, g.coordinates)) return true;
+    } else if (g.type === "MultiPolygon") {
+      for (const poly of g.coordinates) {
+        if (point_in_polygon(lon, lat, poly)) return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/* ---------- map helpers ---------- */
 
 function RecenterOnSelect({ position }) {
   const map = useMap();
@@ -33,13 +133,37 @@ function RecenterOnSelect({ position }) {
   return null;
 }
 
-function MapClickHandler({ onSelectPoint }) {
+function MapClickHandler({ onSelectPoint, allowedGeoJSON }) {
+  const map = useMap();
+
   useMapEvents({
+    mousemove: (e) => {
+      const container = map.getContainer();
+
+      // If polygons not loaded yet, block clicks & show X
+      if (!allowedGeoJSON) {
+        container.classList.add("cursor-x-blocked");
+        return;
+      }
+
+      const inside = point_in_geojson(e.latlng.lng, e.latlng.lat, allowedGeoJSON);
+      if (inside) container.classList.remove("cursor-x-blocked");
+      else container.classList.add("cursor-x-blocked");
+    },
+
     click: (e) => {
-      const { lat, lng } = e.latlng;
-      onSelectPoint?.(lat, lng);
+      if (!allowedGeoJSON) return;
+
+      const lat = e.latlng.lat;
+      const lon = e.latlng.lng;
+
+      // block if not inside contiguous US polygon
+      if (!point_in_geojson(lon, lat, allowedGeoJSON)) return;
+
+      onSelectPoint?.(lat, lon);
     },
   });
+
   return null;
 }
 
@@ -54,13 +178,57 @@ export default function MapView({ selectedPoint, onSelectPoint }) {
   const [searching, setSearching] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
 
+  // NEW: contiguous-USA polygons (Alaska excluded)
+  const [allowedGeoJSON, setAllowedGeoJSON] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load_polys() {
+      try {
+        const res = await fetch(US_STATES_GEOJSON_URL);
+        if (!res.ok) throw new Error("Failed to load US polygons");
+        const data = await res.json();
+
+        // Keep only contiguous states (exclude Alaska + Hawaii)
+        const filtered = {
+          type: "FeatureCollection",
+          features: (data.features || []).filter((f) => {
+            const name = f?.properties?.name;
+            if (!name) return false;
+            if (name === "Alaska") return false;
+            if (name === "Hawaii") return false;
+            return true;
+          }),
+        };
+
+        if (!cancelled) setAllowedGeoJSON(filtered);
+      } catch {
+        // If this fails, we fall back to bounding box checks,
+        // but cursor blocking/click blocking will be strict only when polygons exist.
+        if (!cancelled) setAllowedGeoJSON(null);
+      }
+    }
+
+    load_polys();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const resetErrors = () => setSearchError("");
 
-  const isWithinUS = (lat, lon) =>
-    lat >= USA_BOUNDS.latMin &&
-    lat <= USA_BOUNDS.latMax &&
-    lon >= USA_BOUNDS.lonMin &&
-    lon <= USA_BOUNDS.lonMax;
+  // PERFECT check when polygons loaded, otherwise fallback bounding box
+  const isWithinUS = (lat, lon) => {
+    if (allowedGeoJSON) return point_in_geojson(lon, lat, allowedGeoJSON);
+
+    return (
+      lat >= USA_BOUNDS.latMin &&
+      lat <= USA_BOUNDS.latMax &&
+      lon >= USA_BOUNDS.lonMin &&
+      lon <= USA_BOUNDS.lonMax
+    );
+  };
 
   const handleSearch = async (e) => {
     e?.preventDefault();
@@ -89,7 +257,9 @@ export default function MapView({ selectedPoint, onSelectPoint }) {
     setSearching(true);
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(nameQuery)}&limit=1`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          nameQuery
+        )}&limit=1`
       );
       if (!res.ok) throw new Error("Search failed");
       const data = await res.json();
@@ -97,12 +267,16 @@ export default function MapView({ selectedPoint, onSelectPoint }) {
         setSearchError("No results found.");
         return;
       }
-      const { lat, lon } = data[0];
-      if (!isWithinUS(parseFloat(lat), parseFloat(lon))) {
+
+      const lat = parseFloat(data[0].lat);
+      const lon = parseFloat(data[0].lon);
+
+      if (!isWithinUS(lat, lon)) {
         setShowComingSoon(true);
         return;
       }
-      onSelectPoint?.(parseFloat(lat), parseFloat(lon));
+
+      onSelectPoint?.(lat, lon);
     } catch (err) {
       setSearchError(err.message || "Unable to search right now.");
     } finally {
@@ -153,14 +327,14 @@ export default function MapView({ selectedPoint, onSelectPoint }) {
               onChange={(e) => setNameQuery(e.target.value)}
               style={searchBarStyles.input}
             />
-        )}
+          )}
 
-        <button type="submit" style={searchBarStyles.button} disabled={searching}>
-          {searching ? "Searching…" : "Search"}
-        </button>
-      </form>
-      {searchError && <div style={searchBarStyles.error}>{searchError}</div>}
-    </div>
+          <button type="submit" style={searchBarStyles.button} disabled={searching}>
+            {searching ? "Searching…" : "Search"}
+          </button>
+        </form>
+        {searchError && <div style={searchBarStyles.error}>{searchError}</div>}
+      </div>
 
       <div style={logoStyles.corner}>
         <img src="/src/assets/logo.png" alt="GrowWise" style={logoStyles.image} />
@@ -185,13 +359,20 @@ export default function MapView({ selectedPoint, onSelectPoint }) {
         zoom={USA_ZOOM}
         style={{ height: "100%", width: "100%", position: "absolute", inset: 0 }}
         scrollWheelZoom={true}
+        maxBounds={LOWER48_BOUNDS}
+        maxBoundsViscosity={1.0}
+        worldCopyJump={true}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <MapClickHandler onSelectPoint={onSelectPoint} />
+
+        {/* NEW: blocks clicks outside contiguous USA + sets cursor to X */}
+        <MapClickHandler onSelectPoint={onSelectPoint} allowedGeoJSON={allowedGeoJSON} />
+
         <RecenterOnSelect position={selectedPoint ? [selectedPoint.lat, selectedPoint.lon] : null} />
+
         {selectedPoint && (
           <Marker position={[selectedPoint.lat, selectedPoint.lon]}>
             <Popup>
