@@ -1,5 +1,4 @@
-// src/App.jsx
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import MapView from "./components/map/MapView";
 import SidePanel from "./components/panel/SidePanel";
 import LandingPage from "./LandingPage";
@@ -8,7 +7,13 @@ const API_BASE = "/api";
 
 function AppShell() {
   const [selectedPoint, setSelectedPoint] = useState(null);
+
+  // "features" = current slider/override values
   const [features, setFeatures] = useState({});
+
+  // "baseFeatures" = fetched baseline values for that location (Reset All target)
+  const [baseFeatures, setBaseFeatures] = useState({});
+
   const [source, setSource] = useState({});
   const [fetchLoading, setFetchLoading] = useState(false);
   const [predictLoading, setPredictLoading] = useState(false);
@@ -20,17 +25,19 @@ function AppShell() {
     setError(null);
     setFetchLoading(true);
     setResult(null);
+
     try {
       const res = await fetch(
-        `${API_BASE}/fetch-features?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(
-          lon
-        )}`
+        `${API_BASE}/fetch-features?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`
       );
       if (!res.ok) throw new Error(await res.text());
+
       const data = await res.json();
+
+      // if backend returns { source, elevation, temperature, ... }
       const { source: src, ...feat } = data;
-      setSource(src || {});
-      setFeatures({
+
+      const fetched = {
         elevation: feat.elevation,
         temperature: feat.temperature,
         humidity: feat.humidity,
@@ -38,11 +45,16 @@ function AppShell() {
         soil_tp: feat.soil_tp,
         soil_ap: feat.soil_ap,
         soil_an: feat.soil_an,
-      });
+      };
+
+      setSource(src || {});
+      setBaseFeatures(fetched);
+      setFeatures(fetched);
     } catch (err) {
-      setError(err.message || "Failed to fetch features");
-      setFeatures({});
+      setError(err?.message || "Failed to fetch features");
       setSource({});
+      setBaseFeatures({});
+      setFeatures({});
     } finally {
       setFetchLoading(false);
     }
@@ -51,6 +63,7 @@ function AppShell() {
   const handleRunPredict = useCallback(async (currentFeatures) => {
     setError(null);
     setPredictLoading(true);
+
     try {
       const res = await fetch(`${API_BASE}/predict`, {
         method: "POST",
@@ -58,10 +71,11 @@ function AppShell() {
         body: JSON.stringify({ features: currentFeatures }),
       });
       if (!res.ok) throw new Error(await res.text());
+
       const data = await res.json();
       setResult(data);
     } catch (err) {
-      setError(err.message || "Prediction failed");
+      setError(err?.message || "Prediction failed");
       setResult(null);
     } finally {
       setPredictLoading(false);
@@ -71,6 +85,7 @@ function AppShell() {
   const handleClear = useCallback(() => {
     setSelectedPoint(null);
     setFeatures({});
+    setBaseFeatures({});
     setSource({});
     setResult(null);
     setError(null);
@@ -90,9 +105,7 @@ function AppShell() {
           <div style={overlayStyles.barTrack}>
             <div style={overlayStyles.barFill} />
           </div>
-          {loadingMessage && (
-            <div style={overlayStyles.message}>{loadingMessage}</div>
-          )}
+          {loadingMessage && <div style={overlayStyles.message}>{loadingMessage}</div>}
         </div>
       )}
 
@@ -111,6 +124,7 @@ function AppShell() {
         <SidePanel
           selectedPoint={selectedPoint}
           features={features}
+          baseFeatures={baseFeatures}
           source={source}
           fetchLoading={fetchLoading}
           predictLoading={predictLoading}

@@ -5,7 +5,9 @@ export default function LandingPage({ onEnter }) {
   return (
     <div className="gw-landing">
       <div className="gw-bg">
+        <div className="gw-tunnel" />
         <div className="gw-dots" />
+        <div className="gw-sweep" />
         <div className="gw-glow gw-glow-a" />
         <div className="gw-glow gw-glow-b" />
         <div className="gw-vignette" />
@@ -17,7 +19,7 @@ export default function LandingPage({ onEnter }) {
           <span className="gw-brand-name">GrowWiseAI</span>
         </div>
 
-        <button className="gw-openapp" onClick={onEnter}>
+        <button className="gw-openapp" onClick={onEnter} type="button">
           Open App <span className="gw-arrow">→</span>
         </button>
       </header>
@@ -29,8 +31,7 @@ export default function LandingPage({ onEnter }) {
           </div>
 
           <h1 className="gw-title">
-            GrowWiseAI
-            <span className="gw-title-accent">.</span>
+            GrowWiseAI<span className="gw-title-accent">.</span>
           </h1>
 
           <p className="gw-slogan">
@@ -38,20 +39,30 @@ export default function LandingPage({ onEnter }) {
           </p>
 
           <p className="gw-subtitle">
-            Click a location in the contiguous USA, fetch environmental features,
-            tweak inputs, and run a prediction instantly.
+            Pick a point in the contiguous U.S. We auto-fetch elevation, climate,
+            and soil nutrients, let you fine-tune inputs, then estimate tree
+            survivability instantly.
           </p>
 
           <div className="gw-cta">
-            <button className="gw-btn gw-btn-primary" onClick={onEnter}>
+            <button className="gw-btn gw-btn-primary" onClick={onEnter} type="button">
               Launch Demo
             </button>
-            <a className="gw-btn gw-btn-ghost" href="#how">
+
+            <a
+              className="gw-btn gw-btn-ghost"
+              href="#how"
+              onClick={(e) => {
+                e.preventDefault();
+                const el = document.getElementById("how");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}
+            >
               How it works
             </a>
           </div>
 
-          <div className="gw-mini" id="how">
+          <div className="gw-mini">
             <div className="gw-mini-item">
               <div className="gw-mini-num">01</div>
               <div className="gw-mini-text">Select a point (lower-48 only)</div>
@@ -96,6 +107,68 @@ export default function LandingPage({ onEnter }) {
           </div>
         </div>
       </main>
+
+      <section className="gw-how" id="how">
+        <div className="gw-how-inner">
+          <h2 className="gw-how-title">How GrowWiseAI works</h2>
+
+          <p className="gw-how-lead">
+            GrowWiseAI combines map-based selection with real environmental inputs.
+            You click a location, we fetch local conditions, you can override values
+            if needed, and then the model estimates survivability.
+          </p>
+
+          <div className="gw-how-grid">
+            <div className="gw-how-card">
+              <div className="gw-how-num">01</div>
+              <div className="gw-how-head">Select a location (lower-48 only)</div>
+              <div className="gw-how-text">
+                The map is restricted to the contiguous United States. Outside the
+                boundary, the cursor shows a red ❌ and clicks are blocked—so you
+                don’t accidentally pick Canada or Mexico.
+              </div>
+            </div>
+
+            <div className="gw-how-card">
+              <div className="gw-how-num">02</div>
+              <div className="gw-how-head">Fetch base environmental features</div>
+              <div className="gw-how-text">
+                On click, the frontend calls{" "}
+                <span className="gw-code">/api/fetch-features</span> with latitude/
+                longitude. The backend returns base conditions for that spot:
+                elevation, temperature, humidity, and soil nutrients.
+              </div>
+            </div>
+
+            <div className="gw-how-card">
+              <div className="gw-how-num">03</div>
+              <div className="gw-how-head">Override inputs (optional)</div>
+              <div className="gw-how-text">
+                Use sliders to explore “what-if” scenarios. Your app keeps both the
+                base values and your overrides—so “Reset all” can snap everything
+                back to the fetched baseline.
+              </div>
+            </div>
+
+            <div className="gw-how-card">
+              <div className="gw-how-num">04</div>
+              <div className="gw-how-head">Run the prediction</div>
+              <div className="gw-how-text">
+                When you press “Run prediction,” the frontend POSTs the current
+                feature set to <span className="gw-code">/api/predict</span>. The
+                backend loads the trained model and returns a survivability estimate
+                shown in the results card.
+              </div>
+            </div>
+          </div>
+
+          <div className="gw-how-cta">
+            <button className="gw-btn gw-btn-primary" onClick={onEnter} type="button">
+              Launch Demo
+            </button>
+          </div>
+        </div>
+      </section>
 
       <footer className="gw-footer">
         <span>© {new Date().getFullYear()} GrowWiseAI</span>
