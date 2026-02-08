@@ -24,9 +24,9 @@ X_val, X_test, y_val, y_test = train_test_split(
 
 # Initialize and train the XGBoost model
 xgb_model = XGBClassifier(
-    n_estimators=100,
-    max_depth=10,
-    learning_rate=0.1,
+    n_estimators=50,
+    max_depth=4,
+    learning_rate=0.05,
     random_state=42,
     n_jobs=-1
 )
