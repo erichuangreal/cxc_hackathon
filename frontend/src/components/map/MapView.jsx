@@ -451,14 +451,14 @@ const searchBarStyles = {
 const logoStyles = {
   corner: {
     position: "absolute",
-    bottom: 14,
-    left: 14,
+    bottom: 5,
+    left: 5,
     zIndex: 900,
     pointerEvents: "none",
   },
   image: {
-    width: 60,
-    height: 60,
+    width: 150,
+    height: 150,
     objectFit: "cover",
     borderRadius: 0,
   },
