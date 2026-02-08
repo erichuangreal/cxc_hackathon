@@ -43,8 +43,7 @@ xgb_model = XGBClassifier(
     max_depth=4,
     learning_rate=0.05,
     random_state=42,
-    n_jobs=-1,
-    early_stopping_rounds=10
+    n_jobs=-1
 )
 
 xgb_model.fit(X_train, y_train)

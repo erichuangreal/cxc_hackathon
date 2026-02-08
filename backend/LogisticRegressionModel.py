@@ -50,10 +50,12 @@ train_accuracy = accuracy_score(y_train, y_train_pred)
 val_accuracy = accuracy_score(y_val, y_val_pred)
 test_accuracy = accuracy_score(y_test, y_test_pred)
 
-# Print results
-print("Logistic Regression Model Evaluation")
-print("=" * 50)
 print(f"Training set accuracy: {train_accuracy:.4f}")
 print(f"Validation set accuracy: {val_accuracy:.4f}")
 print(f"Test set accuracy: {test_accuracy:.4f}")
-print()
+
+
+# The model calculates a weighted sum of inputs and passes it 
+# through a 'Softmax' function to output probabilities for all 4 classes.
+# The class with the highest probability (e.g., 0.85 for 'Healthy') is the prediction.
+# It's more linear and usually less optimal for multivariate problems with more complex relations
