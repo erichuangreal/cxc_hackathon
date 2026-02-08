@@ -113,7 +113,7 @@ export default function LandingPage({ onEnter }) {
 
           {/* Less wordy subtitle */}
           <p className="gw-subtitle">
-            Click a point in the lower 48. We pull daily-refreshed soil + climate
+            Click a point in one of the 48 states. We pull daily-refreshed soil + climate
             baselines and predict tree survivability.
           </p>
 
