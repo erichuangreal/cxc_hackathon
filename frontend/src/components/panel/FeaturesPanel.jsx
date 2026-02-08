@@ -1,5 +1,5 @@
 // src/components/panel/FeaturesPanel.jsx
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 const FEATURE_KEYS = [
   "elevation",
@@ -64,6 +64,7 @@ function mapCSVToFeatures(csvObj) {
 
 export default function FeaturesPanel({
   features = {},
+  baseFeatures = {},
   source = {},
   isLoading = false,
   onFeaturesChange,
@@ -72,6 +73,11 @@ export default function FeaturesPanel({
 }) {
   const [overrides, setOverrides] = useState({});
   const [csvError, setCsvError] = useState(null);
+
+  useEffect(() => {
+    // New location selection: clear overrides so sliders reflect freshly fetched values
+    setOverrides({});
+  }, [baseFeatures]);
 
   const currentFeatures = useCallback(() => {
     const out = { ...features };
@@ -114,7 +120,14 @@ export default function FeaturesPanel({
     FEATURE_KEYS.forEach((k) => {
       if (k !== key && overrides[k] !== undefined && overrides[k] !== null) next[k] = overrides[k];
     });
-    next[key] = features[key] != null && Number.isFinite(features[key]) ? features[key] : FEATURE_CONFIG[key]?.min ?? 0;
+    const baseVal = baseFeatures[key];
+    const fallback = FEATURE_CONFIG[key]?.min ?? 0;
+    next[key] =
+      baseVal != null && Number.isFinite(baseVal)
+        ? baseVal
+        : features[key] != null && Number.isFinite(features[key])
+          ? features[key]
+          : fallback;
     onFeaturesChange?.({ ...next });
   };
 
@@ -149,6 +162,17 @@ export default function FeaturesPanel({
   const handleRun = () => {
     onRun?.(currentFeatures());
   };
+
+  const handleResetAll = () => {
+    setOverrides({});
+    if (Object.keys(baseFeatures || {}).length) {
+      onFeaturesChange?.({ ...baseFeatures });
+    } else {
+      onFeaturesChange?.({ ...features });
+    }
+  };
+
+  const hasOverrides = Object.keys(overrides).length > 0;
 
   if (isLoading) {
     return (
@@ -244,6 +268,18 @@ export default function FeaturesPanel({
       </div>
 
       <div style={styles.btnRow}>
+        <button
+          type="button"
+          style={{
+            ...styles.btnSecondary,
+            opacity: hasOverrides ? 1 : 0.65,
+            cursor: hasOverrides ? "pointer" : "not-allowed",
+          }}
+          disabled={!hasOverrides}
+          onClick={handleResetAll}
+        >
+          Reset settings
+        </button>
         <button
           style={styles.btnPrimary}
           onClick={handleRun}
@@ -359,7 +395,16 @@ const styles = {
     color: "rgba(255,255,255,0.8)",
     cursor: "pointer",
   },
-  btnRow: { marginTop: 8 },
+  btnRow: { marginTop: 8, display: "flex", flexDirection: "column", gap: 8 },
+  btnSecondary: {
+    width: "100%",
+    padding: "9px 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(255,255,255,0.25)",
+    background: "transparent",
+    color: "#fff",
+    fontWeight: 700,
+  },
   btnPrimary: {
     width: "100%",
     padding: "10px 12px",

@@ -8,6 +8,7 @@ const API_BASE = "/api";
 export default function App() {
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [features, setFeatures] = useState({});
+  const [baseFeatures, setBaseFeatures] = useState({});
   const [source, setSource] = useState({});
   const [fetchLoading, setFetchLoading] = useState(false);
   const [predictLoading, setPredictLoading] = useState(false);
@@ -27,7 +28,7 @@ export default function App() {
       const data = await res.json();
       const { source: src, ...feat } = data;
       setSource(src || {});
-      setFeatures({
+      const fetched = {
         elevation: feat.elevation,
         temperature: feat.temperature,
         humidity: feat.humidity,
@@ -35,10 +36,13 @@ export default function App() {
         soil_tp: feat.soil_tp,
         soil_ap: feat.soil_ap,
         soil_an: feat.soil_an,
-      });
+      };
+      setBaseFeatures(fetched);
+      setFeatures(fetched);
     } catch (err) {
       setError(err.message || "Failed to fetch features");
       setFeatures({});
+      setBaseFeatures({});
       setSource({});
     } finally {
       setFetchLoading(false);
@@ -68,6 +72,7 @@ export default function App() {
   const handleClear = useCallback(() => {
     setSelectedPoint(null);
     setFeatures({});
+    setBaseFeatures({});
     setSource({});
     setResult(null);
     setError(null);
@@ -101,6 +106,7 @@ export default function App() {
         <SidePanel
         selectedPoint={selectedPoint}
         features={features}
+        baseFeatures={baseFeatures}
         source={source}
         fetchLoading={fetchLoading}
         predictLoading={predictLoading}

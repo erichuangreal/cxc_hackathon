@@ -5,6 +5,7 @@ import ResultsCard from "./ResultsCard";
 export default function SidePanel({
   selectedPoint,
   features,
+  baseFeatures,
   source,
   fetchLoading,
   predictLoading,
@@ -36,6 +37,7 @@ export default function SidePanel({
 
       <FeaturesPanel
         features={features}
+        baseFeatures={baseFeatures}
         source={source}
         isLoading={fetchLoading}
         onFeaturesChange={onFeaturesChange}
