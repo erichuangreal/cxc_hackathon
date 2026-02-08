@@ -34,4 +34,5 @@ Where each of the **7 model features** comes from when using **fetch-features**.
 | Elevation | Auto | Open-Elevation `api.open-elevation.com/api/v1/lookup` |
 | Temperature | Auto | Open-Meteo `api.open-meteo.com/v1/forecast?current=temperature_2m,relative_humidity_2m` |
 | Humidity | Auto | Open-Meteo (same call) |
-| Soil Total Nitrogen (TN), Total Phosphorus (TP), Available Phosphorus (AP), Available Nitrogen (AN) | Auto | SoilGrids `rest.isric.org/soilgrids/v2.0/properties/query` |
+| Soil Total Nitrogen (TN), Available Nitrogen (AN) | Auto | SoilGrids `nitrogen`; fallback: `soc` C:N ~10:1 proxy when N is null |
+| Soil Total Phosphorus (TP), Available Phosphorus (AP) | Auto | SoilGrids `soc` as P proxy (P:C ~0.01) — SoilGrids has no P layer |

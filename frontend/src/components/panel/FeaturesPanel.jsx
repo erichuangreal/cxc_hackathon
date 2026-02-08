@@ -15,10 +15,10 @@ const FEATURE_CONFIG = {
   elevation: { label: "Elevation", min: 0, max: 4000, step: 1, unit: "m" },
   temperature: { label: "Temperature", min: -20, max: 50, step: 0.5, unit: "°C" },
   humidity: { label: "Humidity", min: 0, max: 100, step: 1, unit: "%" },
-  soil_tn: { label: "Soil Total Nitrogen", min: 0, max: 2, step: 0.01 },
-  soil_an: { label: "Soil Available Nitrogen", min: 0, max: 2, step: 0.01 },
-  soil_tp: { label: "Soil Total Phosphorus", min: 0, max: 2, step: 0.01 },
-  soil_ap: { label: "Soil Available Phosphorus", min: 0, max: 2, step: 0.01 },
+  soil_tn: { label: "Soil Total Nitrogen", min: 0, max: 0.25, step: 0.01 },
+  soil_tp: { label: "Soil Total Phosphorus", min: 0, max: 0.25, step: 0.01 },
+  soil_ap: { label: "Soil Available Phosphorus", min: 0, max: 0.25, step: 0.01 },
+  soil_an: { label: "Soil Available Nitrogen", min: 0, max: 0.01, step: 0.0001 },
 };
 
 function parseCSV(text) {

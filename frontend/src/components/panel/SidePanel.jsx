@@ -14,6 +14,7 @@ export default function SidePanel({
   onClear,
   onFeaturesChange,
   onRunPredict,
+  dataVersion = 0,
 }) {
   return (
     <aside style={styles.panel}>
@@ -36,6 +37,7 @@ export default function SidePanel({
       {error ? <div style={styles.error}>{error}</div> : null}
 
       <FeaturesPanel
+        key={dataVersion}
         features={features}
         baseFeatures={baseFeatures}
         source={source}

@@ -54,10 +54,10 @@ API_KEYS = [
 
 
 def _cache_key(lat: float, lon: float) -> tuple[float, float]:
-    return (round(lat, 2), round(lon, 2))
+    return (round(lat, 3), round(lon, 3))
 
 
-# In-memory cache for fetch results keyed by (lat, lon) rounded to 0.01°
+# In-memory cache for fetch results keyed by (lat, lon) rounded to 0.001° (~100m)
 _fetch_cache: dict[tuple[float, float], dict] = {}
 _cache_lock = asyncio.Lock()
 
@@ -109,61 +109,94 @@ async def _open_elevation(client: httpx.AsyncClient, lat: float, lon: float) -> 
         return None
 
 
+def _parse_soilgrids_response(data: dict) -> tuple[dict, float | None]:
+    """Parse SoilGrids response; return (out dict, soc_g_kg for fallbacks)."""
+    out = {"soil_tn": None, "soil_tp": None, "soil_ap": None, "soil_an": None}
+    soc_g_kg = None
+    props = data.get("properties") or {}
+    layers = props.get("layers") or []
+    for layer in layers:
+        name = (layer.get("name") or "").lower()
+        depths = layer.get("depths") or []
+        vals = []
+        for d in depths:
+            values = d.get("values") or {}
+            v = values.get("mean") or values.get("Q0.5")
+            if v is not None:
+                vals.append(float(v))
+        if not vals:
+            continue
+        mean_val = sum(vals) / len(vals)
+        if "nitrogen" in name or "n_total" in name:
+            # SoilGrids N is cg/kg; mean_val/100 = g/kg. Map to training range [0.01, 0.25].
+            # Training soil_TN ~0.01–0.22; 100 cg/kg ≈ 0.1 in training scale.
+            raw_g_kg = mean_val / 100.0
+            soil_tn = min(0.25, max(0.01, raw_g_kg * 0.12))
+            out["soil_tn"] = round(soil_tn, 4)
+            out["soil_an"] = round(soil_tn * 0.033, 4)  # AN/TN ~0.033 from training
+        elif "soc" in name or "organic_carbon" in name:
+            soc_g_kg = mean_val / 10.0
+            soil_p = min(1.0, max(0.05, soc_g_kg * 0.012))
+            out["soil_tp"] = round(soil_p, 4)
+            out["soil_ap"] = round(soil_p * 0.95, 4)
+    if out["soil_tn"] is None and soc_g_kg is not None and soc_g_kg > 0:
+        # SOC g/kg; C:N ~10:1 so N ≈ soc/10 g/kg. Map to training range [0.01, 0.25].
+        soil_tn_proxy = min(0.25, max(0.01, soc_g_kg * 0.002))
+        out["soil_tn"] = round(soil_tn_proxy, 4)
+        out["soil_an"] = round(soil_tn_proxy * 0.033, 4)
+    return out, soc_g_kg
+
+
 async def _soilgrids(client: httpx.AsyncClient, lat: float, lon: float) -> dict[str, float | None]:
-    """Fetch SoilGrids properties; return soil_tn, soil_tp, soil_ap, soil_an (or None)."""
-    # SoilGrids v2 properties/query: lat, lon, depth for nitrogen etc.
+    """Fetch SoilGrids nitrogen + SOC. Single call (5/min limit)."""
     url = "https://rest.isric.org/soilgrids/v2.0/properties/query"
-    params = {"lat": lat, "lon": lon}
     out = {"soil_tn": None, "soil_tp": None, "soil_ap": None, "soil_an": None}
     try:
-        r = await client.get(url, params=params, timeout=8.0)
+        params = {"lat": lat, "lon": lon, "property": ["nitrogen", "soc"]}
+        r = await client.get(url, params=params, timeout=10.0)
         r.raise_for_status()
         data = r.json()
-        # Response has properties per depth; use 0-5cm or first depth
-        props = data.get("properties") or {}
-        layers = props.get("layers") or []
-        for layer in layers:
-            name = (layer.get("name") or "").lower()
-            depths = layer.get("depths") or []
-            if not depths:
-                continue
-            # Take mean of depth bands or first band
-            vals = []
-            for d in depths:
-                lab = d.get("label", "")
-                values = d.get("values") or {}
-                # values can be mean, min, max, etc.
-                v = values.get("mean") or values.get("Q0.5")
-                if v is not None:
-                    vals.append(float(v))
-            if not vals:
-                continue
-            mean_val = sum(vals) / len(vals)
-            # Nitrogen in cg/kg -> scale to training range ~0.04-0.9 (g/kg would be /10; training is 0.1-0.6 often)
-            if "nitrogen" in name or "n_total" in name:
-                # cg/kg = 0.01 g/kg; training Soil_TN is ~0.2-0.6
-                out["soil_tn"] = (mean_val / 100.0) * 2.0  # rough scale into range
-                out["soil_an"] = out["soil_tn"] * 0.5  # proxy if no separate AN
-            if "phosphorus" in name or "phh2o" in name:
-                # Use as proxy for P if available
-                out["soil_tp"] = min(1.0, max(0.0, mean_val / 100.0)) if mean_val else None
-                out["soil_ap"] = out["soil_tp"]
-        # If nitrogen not found, try common key
-        if out["soil_tn"] is None and layers:
-            for layer in layers:
-                name = (layer.get("name") or "").lower()
-                if "n_" in name or "nitrogen" in name:
-                    depths = layer.get("depths") or []
-                    for d in depths:
-                        v = (d.get("values") or {}).get("mean") or (d.get("values") or {}).get("Q0.5")
-                        if v is not None:
-                            out["soil_tn"] = (float(v) / 100.0) * 2.0
-                            out["soil_an"] = out["soil_tn"] * 0.5
-                            break
-                    break
+        parsed, _ = _parse_soilgrids_response(data)
+        out.update(parsed)
     except Exception:
         pass
     return out
+
+
+def _climate_nitrogen_proxy(
+    elevation: float | None,
+    temperature: float | None,
+    humidity: float | None,
+) -> tuple[float, float]:
+    """
+    Estimate soil TN and AN from climate when SoilGrids returns null.
+    Warmer/wetter → higher N (more mineralization, organic matter).
+    Higher elevation → lower N (cooler, less vegetation).
+    Returns (soil_tn, soil_an) in training range [0.01, 0.22].
+    """
+    elev = elevation if elevation is not None else MEDIANS["Elevation"]
+    temp = temperature if temperature is not None else MEDIANS["Temperature"]
+    humid = humidity if humidity is not None else MEDIANS["Humidity"]
+    elev = max(0, min(5000, elev))
+    temp = max(-20, min(50, temp))
+    humid = max(0, min(100, humid))
+    # Base ~0.08; +temp/humidity; -elevation. Output in training range [0.01, 0.22].
+    soil_tn = 0.08 + 0.003 * (temp - 15) + 0.001 * (humid - 50) - 0.00001 * elev
+    soil_tn = round(min(0.22, max(0.01, soil_tn)), 4)
+    soil_an = round(soil_tn * 0.033, 4)  # AN/TN ~0.033 from training
+    return (soil_tn, soil_an)
+
+
+# Baseline for nitrogen amplification; factor 10 preserves gradient while making ~0.01 visible
+_NITROGEN_BASELINE = 0.51
+_NITROGEN_AMPLIFY = 10
+
+
+def _amplify_nitrogen(raw_tn: float) -> float:
+    """Amplify small nitrogen differences for visible variation; preserve gradient. Clamp to [0.1, 1.0]."""
+    diff = raw_tn - _NITROGEN_BASELINE
+    amplified = _NITROGEN_BASELINE + diff * _NITROGEN_AMPLIFY
+    return round(min(1.0, max(0.1, amplified)), 4)
 
 
 def _fire_risk_proxy(temperature: float | None, humidity: float | None) -> float:
@@ -210,8 +243,9 @@ def _source_dict(
     temperature: float | None,
     humidity: float | None,
     soil: dict[str, float | None],
+    climate_nitrogen: bool = False,
 ) -> dict[str, str]:
-    """Which source each feature came from: 'api' or 'default'."""
+    """Which source each feature came from: 'api', 'default', or 'proxy'."""
     source = {}
     for k in FEATURE_NAMES:
         key_lower = k.lower().replace("_", "")
@@ -223,7 +257,10 @@ def _source_dict(
             source["humidity"] = "api" if humidity is not None else "default"
         elif k in ("Soil_TN", "Soil_TP", "Soil_AP", "Soil_AN"):
             sk = k.lower()
-            source[sk] = "api" if (soil.get(sk) is not None) else "default"
+            if climate_nitrogen and k in ("Soil_TN", "Soil_AN"):
+                source[sk] = "proxy"
+            else:
+                source[sk] = "api" if (soil.get(sk) is not None) else "default"
         elif k == "Fire_Risk_Index":
             source["fire_risk_index"] = "proxy"
         else:
@@ -247,9 +284,17 @@ async def fetch_features_for_point(lat: float, lon: float) -> dict:
         soil_task = _soilgrids(client, lat, lon)
         (temp, humidity), elevation, soil = await asyncio.gather(meteo_task, elev_task, soil_task)
 
+    # Climate-based nitrogen fallback when SoilGrids returns null (location-varying)
+    climate_nitrogen_used = soil.get("soil_tn") is None
+    if climate_nitrogen_used:
+        soil["soil_tn"], soil["soil_an"] = _climate_nitrogen_proxy(elevation, temp, humidity)
+    # Ensure soil_an = soil_tn * 0.033 when we have soil_tn (AN/TN from training)
+    if soil.get("soil_tn") is not None:
+        soil["soil_an"] = round(soil["soil_tn"] * 0.033, 4)
+
     fire_risk = _fire_risk_proxy(temp, humidity)
     features = _model_feature_dict(elevation, temp, humidity, soil, fire_risk)
-    source = _source_dict(elevation, temp, humidity, soil)
+    source = _source_dict(elevation, temp, humidity, soil, climate_nitrogen=climate_nitrogen_used)
 
     # Response: snake_case for JSON, plus source
     response = {

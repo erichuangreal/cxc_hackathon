@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import MapView from "./components/map/MapView";
 import SidePanel from "./components/panel/SidePanel";
 import LandingPage from "./LandingPage";
@@ -19,16 +19,25 @@ function AppShell() {
   const [predictLoading, setPredictLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [dataVersion, setDataVersion] = useState(0);
+  const fetchAbortRef = useRef(null);
 
   const handleMapClick = useCallback(async (lat, lon) => {
+    // Cancel any in-flight fetch so older response can't overwrite newer
+    if (fetchAbortRef.current) fetchAbortRef.current.abort();
+    fetchAbortRef.current = new AbortController();
+
     setSelectedPoint({ lat, lon });
     setError(null);
     setFetchLoading(true);
     setResult(null);
+    const thisAbort = fetchAbortRef.current;
+    let aborted = false;
 
     try {
       const res = await fetch(
-        `${API_BASE}/fetch-features?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`
+        `${API_BASE}/fetch-features?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`,
+        { signal: thisAbort.signal, cache: "no-store" }
       );
       if (!res.ok) throw new Error(await res.text());
 
@@ -50,13 +59,19 @@ function AppShell() {
       setSource(src || {});
       setBaseFeatures(fetched);
       setFeatures(fetched);
+      setDataVersion((v) => v + 1);
     } catch (err) {
+      if (err.name === "AbortError") {
+        aborted = true;
+        return;
+      }
       setError(err?.message || "Failed to fetch features");
-      setSource({});
-      setBaseFeatures({});
       setFeatures({});
+      setBaseFeatures({});
+      setSource({});
     } finally {
-      setFetchLoading(false);
+      if (fetchAbortRef.current === thisAbort) fetchAbortRef.current = null;
+      if (!aborted) setFetchLoading(false);
     }
   }, []);
 
@@ -133,6 +148,7 @@ function AppShell() {
           onClear={handleClear}
           onFeaturesChange={setFeatures}
           onRunPredict={handleRunPredict}
+          dataVersion={dataVersion}
         />
       </div>
     </>
