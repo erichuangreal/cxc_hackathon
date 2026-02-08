@@ -2,13 +2,13 @@
 import { useState, useCallback } from "react";
 import MapView from "./components/map/MapView";
 import SidePanel from "./components/panel/SidePanel";
+import LandingPage from "./LandingPage";
 
 const API_BASE = "/api";
 
-export default function App() {
+function AppShell() {
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [features, setFeatures] = useState({});
-  const [baseFeatures, setBaseFeatures] = useState({});
   const [source, setSource] = useState({});
   const [fetchLoading, setFetchLoading] = useState(false);
   const [predictLoading, setPredictLoading] = useState(false);
@@ -22,13 +22,15 @@ export default function App() {
     setResult(null);
     try {
       const res = await fetch(
-        `${API_BASE}/fetch-features?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`
+        `${API_BASE}/fetch-features?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(
+          lon
+        )}`
       );
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       const { source: src, ...feat } = data;
       setSource(src || {});
-      const fetched = {
+      setFeatures({
         elevation: feat.elevation,
         temperature: feat.temperature,
         humidity: feat.humidity,
@@ -36,13 +38,10 @@ export default function App() {
         soil_tp: feat.soil_tp,
         soil_ap: feat.soil_ap,
         soil_an: feat.soil_an,
-      };
-      setBaseFeatures(fetched);
-      setFeatures(fetched);
+      });
     } catch (err) {
       setError(err.message || "Failed to fetch features");
       setFeatures({});
-      setBaseFeatures({});
       setSource({});
     } finally {
       setFetchLoading(false);
@@ -72,7 +71,6 @@ export default function App() {
   const handleClear = useCallback(() => {
     setSelectedPoint(null);
     setFeatures({});
-    setBaseFeatures({});
     setSource({});
     setResult(null);
     setError(null);
@@ -98,27 +96,43 @@ export default function App() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(200px, 1fr) 360px", height: "100vh", overflow: "hidden" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(200px, 1fr) 360px",
+          height: "100vh",
+          overflow: "hidden",
+        }}
+      >
         <div style={{ minHeight: 0, height: "100%", position: "relative" }}>
           <MapView selectedPoint={selectedPoint} onSelectPoint={handleMapClick} />
         </div>
 
         <SidePanel
-        selectedPoint={selectedPoint}
-        features={features}
-        baseFeatures={baseFeatures}
-        source={source}
-        fetchLoading={fetchLoading}
-        predictLoading={predictLoading}
-        result={result}
-        error={error}
-        onClear={handleClear}
-        onFeaturesChange={setFeatures}
-        onRunPredict={handleRunPredict}
-      />
+          selectedPoint={selectedPoint}
+          features={features}
+          source={source}
+          fetchLoading={fetchLoading}
+          predictLoading={predictLoading}
+          result={result}
+          error={error}
+          onClear={handleClear}
+          onFeaturesChange={setFeatures}
+          onRunPredict={handleRunPredict}
+        />
       </div>
     </>
   );
+}
+
+export default function App() {
+  const [entered, setEntered] = useState(false);
+
+  if (!entered) {
+    return <LandingPage onEnter={() => setEntered(true)} />;
+  }
+
+  return <AppShell />;
 }
 
 const overlayStyles = {
