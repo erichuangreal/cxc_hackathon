@@ -9,6 +9,7 @@ import {
   useMap,
 } from "react-leaflet";
 import L from "leaflet";
+import logo from "../../assets/logo.png";
 
 // Fix default marker icons in webpack/vite (otherwise broken icon path)
 const defaultIcon = L.icon({
@@ -55,7 +56,7 @@ function pointOnSegment(px, py, ax, ay, bx, by) {
   const cross = (px - ax) * (by - ay) - (py - ay) * (bx - ax);
   if (!nearlyEqual(cross, 0)) return false;
 
-  const dot = (px - ax) * (bx - ax) + (py - ay) * (by - ay);
+  const dot = (px - ax) * (bx - ax) + (py - ay) * (bx - ax);
   if (dot < 0) return false;
 
   const lenSq = (bx - ax) * (bx - ax) + (by - ay) * (by - ay);
@@ -177,7 +178,7 @@ function MapClickAndCursorGuard({ onSelectPoint, allowedGeoJSON }) {
   return null;
 }
 
-export default function MapView({ selectedPoint, onSelectPoint }) {
+export default function MapView({ selectedPoint, onSelectPoint, onBack }) {
   const position = selectedPoint ? [selectedPoint.lat, selectedPoint.lon] : USA_CENTER;
 
   const [searchMode, setSearchMode] = useState("name");
@@ -352,9 +353,17 @@ export default function MapView({ selectedPoint, onSelectPoint }) {
         {searchError && <div style={searchBarStyles.error}>{searchError}</div>}
       </div>
 
-      <div style={logoStyles.corner}>
-        <img src="/src/assets/logo.png" alt="GrowWise" style={logoStyles.image} />
-      </div>
+      {/* Bottom-left Back button */}
+      <button
+        type="button"
+        onClick={() => onBack?.()}
+        style={backButtonStyles.button}
+        title="Back to landing"
+        aria-label="Back to landing"
+      >
+        <img src={logo} alt="GrowWiseAI" style={backButtonStyles.image} />
+        <div style={backButtonStyles.label}>Back</div>
+      </button>
 
       {showComingSoon && (
         <div style={comingSoonStyles.overlay}>
@@ -464,19 +473,36 @@ const searchBarStyles = {
   },
 };
 
-const logoStyles = {
-  corner: {
+const backButtonStyles = {
+  button: {
     position: "absolute",
-    bottom: 5,
-    left: 5,
-    zIndex: 900,
-    pointerEvents: "none",
+    bottom: 14,
+    left: 14,
+    zIndex: 1100,
+    border: "1px solid rgba(46,234,119,0.25)",
+    background: "rgba(6,12,8,0.62)",
+    backdropFilter: "blur(6px)",
+    borderRadius: 16,
+    padding: "10px 10px 8px",
+    display: "grid",
+    justifyItems: "center",
+    gap: 6,
+    cursor: "pointer",
+    boxShadow: "0 18px 48px rgba(0,0,0,0.35)",
   },
   image: {
-    width: 150,
-    height: 150,
-    objectFit: "cover",
-    borderRadius: 0,
+    width: 52,
+    height: 52,
+    objectFit: "contain",
+    display: "block",
+    filter: "drop-shadow(0 10px 22px rgba(46,234,119,0.20))",
+  },
+  label: {
+    color: "rgba(233,249,239,0.9)",
+    fontSize: 12,
+    fontWeight: 800,
+    lineHeight: 1,
+    letterSpacing: 0.2,
   },
 };
 

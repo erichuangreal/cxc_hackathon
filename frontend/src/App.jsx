@@ -5,7 +5,7 @@ import LandingPage from "./LandingPage";
 
 const API_BASE = "/api";
 
-function AppShell() {
+function AppShell({ onBackToLanding }) {
   const [selectedPoint, setSelectedPoint] = useState(null);
 
   // "features" = current slider/override values
@@ -106,6 +106,11 @@ function AppShell() {
     setError(null);
   }, []);
 
+  const handleBack = useCallback(() => {
+    handleClear();
+    onBackToLanding?.();
+  }, [handleClear, onBackToLanding]);
+
   const isLoading = fetchLoading || predictLoading;
   const loadingMessage = fetchLoading
     ? "Fetching location data…"
@@ -133,7 +138,11 @@ function AppShell() {
         }}
       >
         <div style={{ minHeight: 0, height: "100%", position: "relative" }}>
-          <MapView selectedPoint={selectedPoint} onSelectPoint={handleMapClick} />
+          <MapView
+            selectedPoint={selectedPoint}
+            onSelectPoint={handleMapClick}
+            onBack={handleBack}
+          />
         </div>
 
         <SidePanel
@@ -162,7 +171,7 @@ export default function App() {
     return <LandingPage onEnter={() => setEntered(true)} />;
   }
 
-  return <AppShell />;
+  return <AppShell onBackToLanding={() => setEntered(false)} />;
 }
 
 const overlayStyles = {
